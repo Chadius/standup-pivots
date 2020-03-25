@@ -7,13 +7,14 @@ resource_types:
     tag: latest
 
 resources:
-- name: schedule
+- name: Thursday_at_3pm
   type: time
+  icon: clock-outline
   source:
     start: '3PM'
     stop: '3:30 PM'
     interval: 1h
-    location: Europe/Dublin
+    location: America/New_York
     days:
     - Thursday
 
@@ -21,12 +22,10 @@ resources:
   type: slack-notification-resource
   source:
     url: ((slack-notification-url))
-
-
 jobs:
 - name: notify
   plan:
-  - get: schedule
+  - get: Thursday_at_3pm
     trigger: true
   - task: notify-standup-host
     config:

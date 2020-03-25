@@ -1,7 +1,9 @@
 ---
 applications:
-- name: standup-pivots
+- name: boston-standup
   memory: 256M
   instances: 1
   buildpacks:
   - python_buildpack
+  services:
+  - standup-bot-db

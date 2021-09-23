@@ -51,9 +51,14 @@ class Pivot(models.Model):
     @classmethod
     def _ids_for_pivots_running_standups_over_last_weeks(cls, number_of_weeks):
         last_scheduled_standup = Standup.objects.aggregate(Max("week_start"))['week_start__max']
-        skip_upto_date = last_scheduled_standup - timedelta(weeks=number_of_weeks - 1)
-        recent_first_pivots = Pivot.objects.annotate(f=Max('as_first_pivot__week_start')).filter(f__gt=skip_upto_date)
-        recent_second_pivots = Pivot.objects.annotate(s=Max('as_second_pivot__week_start')).filter(s__gt=skip_upto_date)
+
+        if last_scheduled_standup:
+            skip_upto_date = last_scheduled_standup - timedelta(weeks=number_of_weeks - 1)
+            recent_first_pivots = Pivot.objects.annotate(f=Max('as_first_pivot__week_start')).filter(f__gt=skip_upto_date)
+            recent_second_pivots = Pivot.objects.annotate(s=Max('as_second_pivot__week_start')).filter(s__gt=skip_upto_date)
+        else:
+            recent_first_pivots = Pivot.objects.annotate(f=Max('as_first_pivot__week_start'))
+            recent_second_pivots = Pivot.objects.annotate(s=Max('as_second_pivot__week_start'))
         return (recent_first_pivots | recent_second_pivots).distinct().values_list('id', flat=True)
 
 
@@ -93,9 +98,15 @@ class Standup(models.Model):
         return self.__class__.objects.filter(week_start__gt=self.week_start).first()
 
     @classmethod
+    # plan schedules and creates Standup objects for the next week_count weeks.
+    #   Each Standup has 2 pivots.
     def plan(cls, week_count):
         last_date = cls.objects.aggregate(Max("week_start"))['week_start__max']
-        last_date = max(last_date, _last_monday())
+        if last_date:
+            last_date = max(last_date, _last_monday())
+        else:
+            last_date = _last_monday()
+
         for i in range(week_count):
             offset = timedelta(weeks=i + 1)
             first_pivot = Pivot.new_pivot_for_standup()

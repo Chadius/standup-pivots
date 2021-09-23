@@ -141,3 +141,14 @@ class StandupDatasetTestCase(TestCase):
         new_pivots = Pivot.objects.filter(as_first_pivot__isnull=True, as_second_pivot__isnull=True)
         self.assertEqual(1, new_pivots.count())
         Standup.plan(1)
+
+
+# noinspection PyMethodMayBeStatic
+class StandupInitialSetupTestCase(TestCase):
+    fixtures = ("no_previous_standup.json",)
+    current_week_start = (date.today() - timedelta(date.today().weekday())).__str__()
+
+    def test_no_previous_standups_means_schedule_this_week(self):
+        Standup.plan(4)
+        qs = Standup.objects.filter(week_start__gte=self.current_week_start)
+        self.assertEqual(qs.count(), 4)
